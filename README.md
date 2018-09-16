@@ -1,1 +1,1 @@
-# dblp_Reducer
+# dblp-reducer
