@@ -16,35 +16,17 @@ namespace dblp_reducer_src
         {
             Console.Write("hello \n");
 
-            // TODO: load list of restricted authors
-            string fileName = @"C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\data\Authors.txt";
-            List<string> AuthorsName = new List<string>();
+            string authorstxt = @"C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\data\Authors.txt";
+            string authorsxml = @"C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\data\Authors.xml";
+            string publicationsxml = @"C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\data\Publications.xml";
 
-            var fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-            using (var streamReader = new StreamReader(fileStream, Encoding.UTF8))
-            {
-                string line;
-                while ((line = streamReader.ReadLine()) != null)
-                {
-                    if(line != "" && line[0] != '/')
-                        AuthorsName.Add(line);
-                }
-            }
+            // TODO: load list of restricted authors
+            List<string> AuthorsName = Loader.TextListLoader.LoadAuthors(authorstxt);
 
             // TODO: load authors.xml
-            fileName = @"C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\data\Authors.xml";
-            Authors parsedData = null;
-
-            using (TextReader textReader = new StreamReader(fileName))
-            {
-                using (XmlTextReader reader = new XmlTextReader(textReader))
-                {
-                    reader.Namespaces = false;
-                    XmlSerializer serializer = new XmlSerializer(typeof(Authors));
-                    parsedData = (Authors)serializer.Deserialize(reader);
-                }
-            }
-
+            Loader.XmlLoader XmlParser = new Loader.XmlLoader();
+            Authors parsedData = XmlParser.LoadAuthors(authorsxml);
+           
             // TODO: Find authors from restricted list in xml file and return list of ids
             List<Author> AuthorsList = parsedData.AuthorsList;
             HashSet<Author> FoundAuthorsList = new HashSet<Author>();
@@ -61,25 +43,12 @@ namespace dblp_reducer_src
             // TODO: Print stats
             Console.WriteLine("Count of found = " + FoundAuthorsList.Count + " of " + AuthorsName.Count);
 
-
             // TODO: Load publications.xml
-
-            fileName = @"C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\data\Publications.xml";
-            Publications publications = null;
-
-            using (TextReader textReader = new StreamReader(fileName))
-            {
-                using (XmlTextReader reader = new XmlTextReader(textReader))
-                {
-                    reader.Namespaces = false;
-                    XmlSerializer serializer = new XmlSerializer(typeof(Publications));
-                    publications = (Publications)serializer.Deserialize(reader);
-                }
-            }
-
+            Publications publications = XmlParser.LoadPublications(publicationsxml);
             Console.Write("loaded");
 
             // TODO: Walkthrou publications and find coauthors.
+            
             bool first = true;
             Dictionary<int, List<int>> CooperationNetwork = new Dictionary<int, List<int>>();
             foreach(Publication publication in publications.PublicationsList)
@@ -103,22 +72,41 @@ namespace dblp_reducer_src
                 }
             }
 
-            int maxcount = 0;
-            Dictionary < int, List<int> > AnotherDic = new Dictionary<int, List<int>>();
+            Dictionary<int, List<int>> AnotherDic = new Dictionary<int, List<int>>();
+            Dictionary<int, int> NodeToIndexDict = new Dictionary<int, int>();
+            Dictionary<int, int> IndexToNodeDict = new Dictionary<int, int>();
+            int index = 0;
             foreach (KeyValuePair<int,List<int>> item in CooperationNetwork)
             {
                 if (item.Value.Count >= 2)
                 {
                     AnotherDic.Add(item.Key, item.Value);
-                }
 
-                if (item.Value.Count > maxcount)
-                    maxcount = item.Value.Count;
+                    foreach (int author in item.Value)
+                    {
+                        if(!NodeToIndexDict.ContainsKey(author))
+                        {
+                            NodeToIndexDict.Add(author, index);
+                            IndexToNodeDict.Add(index, author);
+                            index++;
+                        }
+                    }
+                }
             }
 
-            Console.WriteLine("DONE");
+            int[,] WeightedAdjacencyMatrix = new int[NodeToIndexDict.Count, NodeToIndexDict.Count];
+            foreach (KeyValuePair<int, List<int>> item in CooperationNetwork)
+            {
+                for(int i = 0; i < item.Value.Count-1; i++)
+                {
+                    WeightedAdjacencyMatrix[NodeToIndexDict[item.Value[i]], NodeToIndexDict[item.Value[i+1]]]++;
+                }
+            }
 
             // TODO: Export network of coauthors to file
+            GmlExporter exporter = new GmlExporter();
+            exporter.Export("stanford.gml", FoundAuthorsList.ToList(), WeightedAdjacencyMatrix, IndexToNodeDict);
+            Console.WriteLine("DONE");
         }
     }
 }

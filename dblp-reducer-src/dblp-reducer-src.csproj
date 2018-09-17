@@ -42,8 +42,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GmlExporter.cs" />
-    <Compile Include="IExporter.cs" />
+    <Compile Include="Exporter\GmlExporter.cs" />
+    <Compile Include="Loader\TextListLoader.cs" />
+    <Compile Include="Loader\XmlLoader.cs" />
     <Compile Include="Model\Author.cs" />
     <Compile Include="Model\Authors.cs" />
     <Compile Include="Model\Publication.cs" />
@@ -54,5 +55,6 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
