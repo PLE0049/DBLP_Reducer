@@ -44,6 +44,10 @@
   <ItemGroup>
     <Compile Include="GmlExporter.cs" />
     <Compile Include="IExporter.cs" />
+    <Compile Include="Model\Author.cs" />
+    <Compile Include="Model\Authors.cs" />
+    <Compile Include="Model\Publication.cs" />
+    <Compile Include="Model\Publications.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
