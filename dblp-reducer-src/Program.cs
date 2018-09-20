@@ -29,23 +29,66 @@ namespace dblp_reducer_src
            
             // TODO: Find authors from restricted list in xml file and return list of ids
             List<Author> AuthorsList = parsedData.AuthorsList;
+            int TotalCount = AuthorsName.Count;
             HashSet<Author> FoundAuthorsList = new HashSet<Author>();
+            Dictionary<string, string> FoundNames = new Dictionary<string, string>();
             foreach (string queryName in AuthorsName)
             {
-                var item = AuthorsList.Where(x => x.Name == queryName).FirstOrDefault();
-                
-                if(item != null)
+                var item = AuthorsList.Where(x => Compare( x.Name, queryName)).FirstOrDefault();
+
+                if (item != null && !FoundNames.ContainsKey(queryName))
                 {
+                    FoundNames.Add(queryName, item.Name);
                     FoundAuthorsList.Add(item);
                 }
             }
+            
+            bool Compare(string nameA, string nameB)
+            {
+                if(nameA == nameB)
+                {
+                    return true;
+                }
+                else
+                {
+                    int LastSpaceIndexA = nameA.LastIndexOf(' ');
+                    int LastSpaceIndexB = nameB.LastIndexOf(' ');
+
+                    if (LastSpaceIndexA > 0 && LastSpaceIndexB > 0)
+                    {
+                        string nameALastName = nameA.Substring(LastSpaceIndexA, (nameA.Length - LastSpaceIndexA));
+                        string nameBLastName = nameB.Substring(LastSpaceIndexB, (nameB.Length - LastSpaceIndexB));
+
+                        if (nameALastName == nameBLastName)
+                        {
+                            if (nameA.Substring(0, (nameA.IndexOf(' '))) == nameB.Substring(0, (nameB.IndexOf(' '))))
+                            {
+                                return true;
+                            }
+                        }
+                    }              
+                }
+                return false;
+            }
 
             // TODO: Print stats
-            Console.WriteLine("Count of found = " + FoundAuthorsList.Count + " of " + AuthorsName.Count);
+            Console.WriteLine("Count of found = " + FoundAuthorsList.Count + " of " + TotalCount);
+
+            foreach (KeyValuePair<string,string> kvp in FoundNames)
+            {
+                Console.WriteLine(kvp.Key + " - " + kvp.Value);
+            }
+            Console.WriteLine("-------------------");
+            foreach (string name in AuthorsName)
+            {
+                if (!FoundNames.ContainsKey(name))
+                {
+                    Console.WriteLine(name);
+                }
+            }
 
             // TODO: Load publications.xml
             Publications publications = XmlParser.LoadPublications(publicationsxml);
-            Console.Write("loaded");
 
             // TODO: Walkthrou publications and find coauthors.
             
