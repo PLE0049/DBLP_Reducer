@@ -47,6 +47,7 @@
     <Compile Include="Loader\XmlLoader.cs" />
     <Compile Include="Model\Author.cs" />
     <Compile Include="Model\Authors.cs" />
+    <Compile Include="Model\Coauthors .cs" />
     <Compile Include="Model\Publication.cs" />
     <Compile Include="Model\Publications.cs" />
     <Compile Include="Program.cs" />

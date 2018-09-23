@@ -7,6 +7,7 @@ using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
 using dblp_reducer_src.Model;
+using System.Net;
 
 namespace dblp_reducer_src
 {
@@ -17,8 +18,107 @@ namespace dblp_reducer_src
             Console.Write("hello \n");
 
             string authorstxt = @"C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\data\Authors.txt";
-            string authorsxml = @"C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\data\Authors.xml";
-            string publicationsxml = @"C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\data\Publications.xml";
+
+            // TODO: load list of restricted authors
+            List<string> AuthorsName = Loader.TextListLoader.LoadAuthors(authorstxt);
+
+            string html = string.Empty;
+            string url = @"https://dblp.uni-trier.de/search/author?xauthor=Jure%20Leskovec";
+
+
+            string search_url = @"http://dblp.uni-trier.de/search/author?xauthor=";       
+
+            string coauthors_url( string author_url)
+            {
+                return @"http://dblp.uni-trier.de/rec/pers/"+ author_url + "/xc";
+            }
+
+            List<Author> FoundAuthors = new List<Author>();
+            Dictionary<string, int> DictAuthor = new Dictionary<string, int>();
+            Dictionary<int, string> NameAuthor = new Dictionary<int, string>();
+
+            int index = 0;
+            foreach (string author_name in AuthorsName)
+            {
+                System.Threading.Thread.Sleep(1000);
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(search_url+author_name);
+                //request.AutomaticDecompression = DecompressionMethods.GZip;
+                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                using (Stream stream = response.GetResponseStream())
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    html = reader.ReadToEnd();
+                }
+
+                MemoryStream memStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
+                XmlSerializer serializer = new XmlSerializer(typeof(Authors));
+                Authors parsedData = (Authors)serializer.Deserialize(memStream);
+                if(parsedData.AuthorsList.Count > 0)
+                {
+                    Author NewAuthor = parsedData.AuthorsList[0];
+                    NewAuthor.Id = index;
+                    NewAuthor.Name = NewAuthor.NameW;
+
+                    if(!DictAuthor.ContainsKey(NewAuthor.url))
+                    {
+                        FoundAuthors.Add(NewAuthor);
+                        DictAuthor.Add(NewAuthor.url, index);
+                        NameAuthor.Add(NewAuthor.Id, NewAuthor.NameW);
+                        index++;
+                    }
+                }
+                    
+            }
+
+            System.Threading.Thread.Sleep(5000);
+            /*
+            using (StreamWriter outputFile = new StreamWriter("FoundAuthors.txt"))
+            {
+                foreach (Author a in FoundAuthors)
+                    outputFile.WriteLine(a.url);
+            }*/
+
+            int[,] WeightedAdjacencyMatrix = new int[FoundAuthors.Count, FoundAuthors.Count];
+
+            foreach (Author author in FoundAuthors)
+            {
+                System.Threading.Thread.Sleep(1000);
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(coauthors_url(author.url));
+                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                using (Stream stream = response.GetResponseStream())
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    html = reader.ReadToEnd();
+                }
+
+                MemoryStream memStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
+                XmlSerializer serializer = new XmlSerializer(typeof(Coauthors));
+                Coauthors parsedData = (Coauthors)serializer.Deserialize(memStream);
+                if (parsedData.AuthorsList.Count > 0)
+                {
+
+                    foreach(Author coauthor in parsedData.AuthorsList)
+                    {
+                        if( DictAuthor.ContainsKey(coauthor.url))
+                        {
+                            Console.WriteLine(author.Name + " - " + NameAuthor[DictAuthor[coauthor.url]] + " " + coauthor.count);
+                            WeightedAdjacencyMatrix[author.Id, DictAuthor[coauthor.url]] = coauthor.count;
+                        }
+                    }
+                }
+            }
+
+            GmlExporter exporter = new GmlExporter();
+            exporter.Export("stanford.gml", FoundAuthors, WeightedAdjacencyMatrix);
+            Console.WriteLine("DONE");     
+        }
+
+        static void Run1(){ 
+            Console.Write("hello \n");
+
+            string authorstxt = @"C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\data\Authors_short.txt";
+            string authorsxml = @"C:\dblp_result\636733187090414687\Authors.xml";
+            string publicationsxml = @"C:\dblp_result\636733187090414687\Publications.xml";
 
             // TODO: load list of restricted authors
             List<string> AuthorsName = Loader.TextListLoader.LoadAuthors(authorstxt);

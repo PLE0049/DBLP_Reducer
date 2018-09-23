@@ -24,6 +24,19 @@ namespace dblp_reducer_src
             return true;
         }
 
+        public bool Export(string fileName, List<Model.Author> AuthorsList, int[,] Matrix)
+        {
+            using (StreamWriter file = new StreamWriter(fileName))
+            {
+                WriteHeader(file);
+                WriteNodes(file, AuthorsList);
+                WriteEdge(file, Matrix);
+                WriteFooter(file);
+            }
+
+            return true;
+        }
+
         private void WriteEdge(StreamWriter file, int[,] Matrix, Dictionary<int, int> IndexToNodeDict)
         {
             for(int i = 0; i < Matrix.GetLength(0); i++)
@@ -36,6 +49,25 @@ namespace dblp_reducer_src
                         file.WriteLine("  [");
                         file.WriteLine("    source " + IndexToNodeDict[i]);
                         file.WriteLine("    target " + IndexToNodeDict[j]);
+                        file.WriteLine("    value " + Matrix[i, j]);
+                        file.WriteLine("  ]");
+                    }
+                }
+            }
+        }
+
+        private void WriteEdge(StreamWriter file, int[,] Matrix)
+        {
+            for (int i = 0; i < Matrix.GetLength(0); i++)
+            {
+                for (int j = i; j < Matrix.GetLength(1); j++)
+                {
+                    if (Matrix[i, j] > 0)
+                    {
+                        file.WriteLine("  edge");
+                        file.WriteLine("  [");
+                        file.WriteLine("    source " + i);
+                        file.WriteLine("    target " + j);
                         file.WriteLine("    value " + Matrix[i, j]);
                         file.WriteLine("  ]");
                     }

@@ -8,9 +8,19 @@ using System.Xml.Serialization;
 namespace dblp_reducer_src.Model
 {
     public class Author
-    {
+    {   
+        [XmlText]
+        public string NameW { get; set; }
+
+        [XmlAttribute("count")]
+        public int count { get; set; }
+
         [XmlElement("id")]
         public int Id { get; set; }
+
+        [XmlAttribute("urlpt")]
+        public string url { get; set; }
+
         [XmlElement("name")]
         public string Name { get; set; }
 
