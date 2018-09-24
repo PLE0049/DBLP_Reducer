@@ -1,6 +1,0 @@
-C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\dblp-reducer-src\bin\Debug\dblp-reducer-src.exe.config
-C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\dblp-reducer-src\bin\Debug\dblp-reducer-src.exe
-C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\dblp-reducer-src\bin\Debug\dblp-reducer-src.pdb
-C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\dblp-reducer-src\obj\Debug\dblp-reducer-src.csprojResolveAssemblyReference.cache
-C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\dblp-reducer-src\obj\Debug\dblp-reducer-src.exe
-C:\Users\jakub\Documents\Visual Studio 2017\dblp-reducer\dblp-reducer-src\obj\Debug\dblp-reducer-src.pdb
