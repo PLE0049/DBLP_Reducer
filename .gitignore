@@ -1,4 +1,6 @@
 /data/*
+/dblp-reducer-src/bin/*
+/dblp-reducer-src/obj/*
 
 
 # Created by https://www.gitignore.io/api/csharp,visualstudio
