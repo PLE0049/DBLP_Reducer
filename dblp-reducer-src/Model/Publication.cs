@@ -7,8 +7,12 @@ using System.Xml.Serialization;
 
 namespace dblp_reducer_src.Model
 {
+    [XmlRoot("dblp")]
+    [Serializable]  
     public class Publication
     {
+        [XmlElement("article")]
+        public Publication Article { get; set; }
         [XmlElement("id")]
         public int Id { get; set; }
         [XmlElement("title")]

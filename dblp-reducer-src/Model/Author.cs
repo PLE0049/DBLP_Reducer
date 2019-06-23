@@ -37,10 +37,10 @@ namespace dblp_reducer_src.Model
                 return (Id == a.Id) && (Name == a.Name);
             }
         }
-
+        
         public override int GetHashCode()
         {
-            return Id+Name.GetHashCode();
+            return Id+NameW.GetHashCode();
         }
     }
 }

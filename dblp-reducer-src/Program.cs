@@ -8,12 +8,197 @@ using System.Xml;
 using System.Xml.Serialization;
 using dblp_reducer_src.Model;
 using System.Net;
+using System.Xml.Linq;
+using System.Xml.XPath;
+using System.Collections;
+using dblp_reducer_src.Exporter;
 
 namespace dblp_reducer_src
 {
     class Program
     {
+       
+
         static void Main(string[] args)
+        {
+            // string authorstxt = @"StanBerk.txt";
+
+            string authorstxt = @"StanBerk.txt";
+
+            // TODO: load list of restricted authors
+            List<string> AuthorsName = Loader.TextListLoader.LoadAuthors(authorstxt);
+            Dictionary<int, Dictionary<Tuple<int, int>, int>> TemporalNet = new Dictionary<int, Dictionary<Tuple<int, int>, int>>();
+            Dictionary<string, int> NameAuthor = new Dictionary<string, int>();
+            Dictionary<Tuple<int, int>, int> UniqueEdges= new Dictionary<Tuple<int, int>, int>();
+            Dictionary<int, int> FirstPersongAppearance = new Dictionary<int, int>();
+
+            int index = 0;
+            foreach(string name in AuthorsName)
+            {
+                NameAuthor.Add(name, index);
+                index++;
+            }
+
+                string html = string.Empty;           
+
+            List<string> FoundAuthors = new List<string>();
+            Dictionary<string, string> DictAuthorName = new Dictionary<string, string>();
+            Dictionary<string, XDocument> Documents = new Dictionary<string, XDocument>();
+            HashSet<Publication> DicPublication = new HashSet<Publication>();
+            List<Publication> NewPublications = new List<Publication>();
+            
+
+            Publications publications = new Publications();
+            foreach (string author_name in AuthorsName)
+            {
+                System.Threading.Thread.Sleep(1000);
+
+                XDocument doc = GetAuthorDetail(author_name, FoundAuthors, null);
+
+                while (!(bool)doc.XPathEvaluate("boolean(/dblpperson/r)"))
+                {
+                    if ((bool)doc.XPathEvaluate("boolean(/dblpperson/homonyms )"))
+                    {
+                        var urlh = ((IEnumerable)doc.XPathEvaluate("/dblpperson/homonyms/h/@f")).Cast<XAttribute>().FirstOrDefault()?.Value;
+                        doc = GetAuthorDetail(author_name, FoundAuthors, urlh);
+                        break;
+                    }
+
+                    string pname = ((IEnumerable)doc.XPathEvaluate("/dblpperson/@pname")).Cast<XAttribute>().FirstOrDefault()?.Value;
+                    string url = ((IEnumerable)doc.XPathEvaluate("/dblpperson/@f")).Cast<XAttribute>().FirstOrDefault()?.Value;
+
+                    doc = GetAuthorDetail(pname, FoundAuthors, url);
+                }
+
+                var query = doc.XPathEvaluate("/dblpperson/r");
+
+                Documents.Add(author_name, doc);
+            }
+
+            foreach (string author_name in AuthorsName)
+            {
+                XDocument doc = Documents[author_name];
+
+                var query = doc.XPathEvaluate("/dblpperson/r");
+                foreach (var pub in (IEnumerable)query)
+                {
+                    MemoryStream strm = new MemoryStream(Encoding.UTF8.GetBytes(pub.ToString()));
+                    XDocument docNav = XDocument.Load(strm);
+                    var names = docNav.XPathEvaluate("/r/*/author");
+                    var year = docNav.XPathEvaluate("string(/r/*/year)");
+                    Tuple<int, int> Edge;
+
+                    foreach (var current_row in (IEnumerable)names)
+                    {
+                        var name = current_row.ToString().Substring(current_row.ToString().IndexOf('>') + 1, current_row.ToString().LastIndexOf('<') - current_row.ToString().IndexOf('>') - 1);
+                        if (author_name != name && NameAuthor.ContainsKey(name))
+                        {
+                            int yearInt = Int32.Parse(year.ToString());
+
+                            if(!TemporalNet.ContainsKey(yearInt))
+                                TemporalNet.Add(yearInt, new Dictionary<Tuple<int, int>, int>());
+
+                            if(NameAuthor[name.ToString()] < NameAuthor[author_name])
+                                Edge = new Tuple<int, int>(NameAuthor[name.ToString()], NameAuthor[author_name]);
+                            else
+                                Edge = new Tuple<int, int>(NameAuthor[author_name], NameAuthor[name.ToString()]);
+
+                            if (!FirstPersongAppearance.ContainsKey(Edge.Item1))
+                            {
+                                FirstPersongAppearance.Add(Edge.Item1, yearInt);
+                            }
+                            else if(FirstPersongAppearance[Edge.Item1] > yearInt)
+                            {
+                                FirstPersongAppearance[Edge.Item1] = yearInt;
+                            }
+
+                            if (!FirstPersongAppearance.ContainsKey(Edge.Item2))
+                            {
+                                FirstPersongAppearance.Add(Edge.Item2, yearInt);
+                            }
+                            else if (FirstPersongAppearance[Edge.Item2] > yearInt)
+                            {
+                                FirstPersongAppearance[Edge.Item2] = yearInt;
+                            }
+
+                            if (TemporalNet[yearInt].ContainsKey(Edge))
+                                TemporalNet[yearInt][Edge]++;
+                            else
+                            {
+                                TemporalNet[yearInt].Add(Edge, 1);
+
+                                if(!UniqueEdges.ContainsKey(Edge))
+                                    UniqueEdges.Add(Edge, 1);
+                            }
+                                
+                        }
+                    }
+                }
+            }
+
+
+
+            GEXFExporter export = new GEXFExporter();
+            export.Export("stanberk.gexf", NameAuthor , FirstPersongAppearance, UniqueEdges, TemporalNet);
+
+        }
+
+        public static string publications_url(string author_url)
+        {
+            return @"https://dblp.uni-trier.de/pers/xx/" + author_url + "?h=1000";
+        }
+
+        public static string pub_detail_url(string dblpkey)
+        {
+            return @"https://dblp.uni-trier.de/rec/xml/" + dblpkey + ".xml";
+        }
+
+        public static XDocument GetAuthorDetail(string author_name, List<string> FoundAuthors, string url)
+        {
+            string search_url = @"http://dblp.uni-trier.de/search/author?xauthor=";
+
+            if(url == null)
+            {
+                string html = GetHtmlFromURL(search_url + author_name);
+
+                MemoryStream memStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
+                XmlSerializer serializer = new XmlSerializer(typeof(Authors));
+                Authors parsedData2 = (Authors)serializer.Deserialize(memStream);
+
+                Author author = parsedData2.AuthorsList[0];
+
+                var item = author_name == author.NameW ? author_name : author.NameW;
+                FoundAuthors.Add(item);
+                html = GetHtmlFromURL(publications_url(author.url));
+                memStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
+                XDocument doc = XDocument.Load(memStream);
+                return doc;
+            }
+            else
+            {
+                string html = GetHtmlFromURL(publications_url(url));
+                MemoryStream memStream = new MemoryStream(Encoding.UTF8.GetBytes(html));            
+                XDocument doc = XDocument.Load(memStream);
+                return doc;
+            }          
+        }
+
+        public static string GetHtmlFromURL(string url)
+        {
+            string html;
+
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            using (Stream stream = response.GetResponseStream())
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                html = reader.ReadToEnd();
+            }
+
+            return html;
+        }
+
+        static void Main2(string[] args)
         {
             Console.Write("hello \n");
 

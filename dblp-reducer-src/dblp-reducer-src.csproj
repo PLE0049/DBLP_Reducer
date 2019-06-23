@@ -32,6 +32,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FPar.GEXF, Version=1.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\FPar.GEXF.1.2.1\lib\net45\FPar.GEXF.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.12.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -42,12 +48,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DynamicXmlParser.cs" />
+    <Compile Include="Exporter\GEXFExporter.cs" />
     <Compile Include="Exporter\GmlExporter.cs" />
     <Compile Include="Loader\TextListLoader.cs" />
     <Compile Include="Loader\XmlLoader.cs" />
     <Compile Include="Model\Author.cs" />
     <Compile Include="Model\Authors.cs" />
     <Compile Include="Model\Coauthors .cs" />
+    <Compile Include="Model\Dblpperson.cs" />
     <Compile Include="Model\Publication.cs" />
     <Compile Include="Model\Publications.cs" />
     <Compile Include="Program.cs" />
@@ -55,6 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
