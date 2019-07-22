@@ -10,6 +10,9 @@ namespace dblp_reducer_src.Exporter
 {
     public class GEXFExporter
     {
+        bool TEMPORAL_EDGES = true;
+        int EDGE_LIFESPAN = 0;
+
         Dictionary<string, int> NameAuthor;
         Dictionary<int, Dictionary<Tuple<int, int>, int>> TemporalNet;
         Dictionary<Tuple<int, int>, int> UniqueEdges;
@@ -54,7 +57,15 @@ namespace dblp_reducer_src.Exporter
                     xmlWriter.WriteAttributeString("defaultedgetype", "undirected");
                     xmlWriter.WriteAttributeString("timeformat", "date");
                     WriteNodes(xmlWriter); // Nodes
-                    WriteEdge(xmlWriter);  // Edges
+
+                    if(TEMPORAL_EDGES)
+                    {
+                        WriteEdgesTemporal(xmlWriter);  // Temporal Edges
+                    } 
+                    else
+                    {
+                        WriteEdge(xmlWriter);  // Edges
+                    }              
                 xmlWriter.WriteEndElement();
             xmlWriter.WriteEndElement();
             //xmlWriter.WriteEndDocument();
@@ -77,23 +88,23 @@ namespace dblp_reducer_src.Exporter
                 // for each year
 
                 int Weight = 0;
-                for(int year = 1900; year < 2020; year++)
+                for (int year = 1900; year < 2020; year++)
                 {
-                    if(TemporalNet.ContainsKey(year))
+                    if (TemporalNet.ContainsKey(year))
                     {
                         Dictionary<Tuple<int, int>, int> edges = TemporalNet[year];
-                        
+
 
                         if (edges.ContainsKey(uniqueEdge.Key) && isFirstAppearance)
                         {
                             Weight += TemporalNet[year][uniqueEdge.Key];
-                        
+
                             xmlWriter.WriteAttributeString("start", year.ToString());
                             xmlWriter.WriteStartElement("attvalues");
-                                xmlWriter.WriteStartElement("attvalue");
-                                    xmlWriter.WriteAttributeString("for", "weight");
-                                    xmlWriter.WriteAttributeString("value", Math.Ceiling((double)Weight/2).ToString());
-                                    xmlWriter.WriteAttributeString("start", year.ToString());
+                            xmlWriter.WriteStartElement("attvalue");
+                            xmlWriter.WriteAttributeString("for", "weight");
+                            xmlWriter.WriteAttributeString("value", Math.Ceiling((double)Weight / 2).ToString());
+                            xmlWriter.WriteAttributeString("start", year.ToString());
                             isFirstAppearance = false;
                         }
 
@@ -102,13 +113,13 @@ namespace dblp_reducer_src.Exporter
                             Weight += TemporalNet[year][uniqueEdge.Key];
 
                             xmlWriter.WriteAttributeString("end", year.ToString());
-                                xmlWriter.WriteEndElement();
-                                xmlWriter.WriteStartElement("attvalue");
-                                xmlWriter.WriteAttributeString("for", "weight");
-                                xmlWriter.WriteAttributeString("value", Math.Ceiling((double)Weight / 2).ToString());
-                                xmlWriter.WriteAttributeString("start", year.ToString());
+                            xmlWriter.WriteEndElement();
+                            xmlWriter.WriteStartElement("attvalue");
+                            xmlWriter.WriteAttributeString("for", "weight");
+                            xmlWriter.WriteAttributeString("value", Math.Ceiling((double)Weight / 2).ToString());
+                            xmlWriter.WriteAttributeString("start", year.ToString());
                         }
-                    }                  
+                    }
                 }
                 xmlWriter.WriteAttributeString("end", "2019");
                 xmlWriter.WriteEndElement();
@@ -116,6 +127,45 @@ namespace dblp_reducer_src.Exporter
                 xmlWriter.WriteEndElement();
             }
 
+            xmlWriter.WriteEndElement();
+        }
+
+        private void WriteEdgesTemporal(XmlWriter xmlWriter)
+        {
+            xmlWriter.WriteStartElement("Edges");
+
+            foreach (KeyValuePair<Tuple<int, int>, int> uniqueEdge in UniqueEdges)
+            {
+                int Weight = 0;
+
+                for (int year = 1900; year < 2020; year++)
+                {
+                    if (TemporalNet.ContainsKey(year))
+                    {
+                        Dictionary<Tuple<int, int>, int> edges = TemporalNet[year];
+
+
+                        if (edges.ContainsKey(uniqueEdge.Key))
+                        {
+                            xmlWriter.WriteStartElement("Edge");
+                            xmlWriter.WriteAttributeString("source", uniqueEdge.Key.Item1.ToString());
+                            xmlWriter.WriteAttributeString("target", uniqueEdge.Key.Item2.ToString());
+                            Weight = TemporalNet[year][uniqueEdge.Key];
+                            xmlWriter.WriteAttributeString("start", year.ToString());
+                            xmlWriter.WriteAttributeString("end", (year + EDGE_LIFESPAN).ToString());
+                            xmlWriter.WriteStartElement("attvalues");
+                            xmlWriter.WriteStartElement("attvalue");
+                            xmlWriter.WriteAttributeString("for", "weight");
+                            xmlWriter.WriteAttributeString("value", Math.Ceiling((double)Weight / 2).ToString());
+                            xmlWriter.WriteAttributeString("start", year.ToString());
+                            xmlWriter.WriteAttributeString("end", (year + EDGE_LIFESPAN).ToString());
+                            xmlWriter.WriteEndElement();
+                            xmlWriter.WriteEndElement();
+                            xmlWriter.WriteEndElement();
+                        }
+                    }
+                }
+            }
             xmlWriter.WriteEndElement();
         }
 
